@@ -22,18 +22,19 @@ def average_slope_intercept(image, lines):
             left_fit.append((slope, intercept))
         else:
             right_fit.append((slope, intercept))
-    left_fit_averge = np.average(left_fit, axis=0)
-    right_fit_averge = np.average(right_fit, axis=0)
-    left_line = make_coordinates(image, left_fit_averge)
-    right_line = make_coordinates(image, right_fit_averge)
+
+    left_fit_average = np.average(left_fit, axis=0)
+    right_fit_average = np.average(right_fit, axis=0)
+    left_line = make_coordinates(image, left_fit_average)
+    right_line = make_coordinates(image, right_fit_average)
 
     return np.array([left_line, right_line])
 
 def canny(image):
-    gray = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY) # 3 Channel -> 1 Channel
+    gray = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY) 
     blur = cv2.GaussianBlur(gray, (5, 5), 0)
     canny = cv2.Canny(blur, 50, 400)
-    
+
     return canny
 
 def display_lines(image, lines):
@@ -48,7 +49,7 @@ def display_lines(image, lines):
 def region_of_interest(image):
     height = image.shape[0]
     polygons = np.array([
-        [(-350, height), (850, height), (320, 110)]
+        [(-100, height), (900, height), (350, 90)]
     ])
     mask = np.zeros_like(image)
     cv2.fillPoly(mask, polygons, 255)
@@ -56,17 +57,30 @@ def region_of_interest(image):
 
     return masked_image
 
-image = cv2.imread('../image/TestTrack_3.jpg', 1)
-image = cv2.resize(image, dsize=(640, 480), interpolation=cv2.INTER_AREA)
 
-lane_image = np.copy(image)
-canny_image = canny(lane_image)
-cropped_image = region_of_interest(canny_image)
-lines = cv2.HoughLinesP(cropped_image, 2, np.pi/180, 100, np.array([]), minLineLength=40, maxLineGap=5)
-averaged_lines = average_slope_intercept(lane_image, lines)
-line_image = display_lines(lane_image, averaged_lines)
-combo_image = cv2.addWeighted(lane_image, 0.8, line_image, 1, 1)
-
-cv2.imshow("result", combo_image)
-cv2.waitKey(0)
+# 동영상 파일 불러오기
+cap = cv2.VideoCapture('../image/video_test_3.mp4')
+while(cap.isOpened()):
+    # thr : frame capture 결과 
+    # frame : Capture한 frame
+    thr, frame = cap.read()
+    
+    if thr:
+        canny_image = canny(frame)
+        cropped_image = region_of_interest(canny_image)
+        lines = cv2.HoughLinesP(cropped_image, 2, np.pi/180, 100, np.array([]), minLineLength=40, maxLineGap=5)
+        try:
+            averaged_lines = average_slope_intercept(frame, lines)
+            line_image = display_lines(frame, averaged_lines)
+            combo_image = cv2.addWeighted(frame, 0.8, line_image, 1, 1)
+        except:
+            combo_image = frame    
+        # 동영상 띄우기
+        cv2.imshow("result", combo_image)
+        # 동영상 종료
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
+    else:
+        break
+cap.release()
 cv2.destroyAllWindows()

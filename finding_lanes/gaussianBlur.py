@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
 
-image = cv2.imread('../image/TestTrack_1.png', 1)
+image = cv2.imread('../image/TestTrack_3.jpg', 1)
 image = cv2.resize(image, dsize=(640, 480), interpolation=cv2.INTER_AREA)
 
 lane_image = np.copy(image)
