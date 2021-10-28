@@ -1,7 +1,7 @@
 import cv2 
 import numpy as np 
 import scipy.fftpack 
-# TODO : canny, track bar
+# TODO : track bar
 
 #### imclearborder definition
 def imclearborder(imgBW, radius):
@@ -55,15 +55,15 @@ def bwareaopen(imgBW, areaPixels):
             cv2.drawContours(imgBWcopy, contours, idx, (0,0,0), -1)
 
     return imgBWcopy
-    
-def homomorphic(img):
+
+def homomorphic_filtering(img, sigma):
+
     # Convert image to 0 to 1, then do log(1 + I)
     imgLog = np.log1p(np.array(img, dtype="float") / 255)
 
     # Create Gaussian mask of sigma = 10
     M = 2 * rows + 1
     N = 2 * cols + 1
-    sigma = 10
     (X, Y) = np.meshgrid(np.linspace(0, N - 1, N), np.linspace(0, M - 1, M))
     centerX = np.ceil(N / 2)
     centerY = np.ceil(M / 2)
@@ -84,10 +84,9 @@ def homomorphic(img):
     Iouthigh = scipy.real(scipy.fftpack.ifft2(If.copy() * HhighShift, (M,N)))
 
     # Set scaling factors and add
-    gamma1 = 0.3
-    gamma2 = 1.5
+    gamma1 = 0
+    gamma2 = 1
     Iout = gamma1 * Ioutlow[0:rows, 0:cols] + gamma2 * Iouthigh[0:rows, 0:cols]
-
     # Anti-log then rescale to [0,1]
     Ihmf = np.expm1(Iout)
     Ihmf = (Ihmf - np.min(Ihmf)) / (np.max(Ihmf) - np.min(Ihmf))
@@ -105,32 +104,39 @@ def homomorphic(img):
 
     return Ihmf2, Ithresh, Iopen
 
-#### Main program
 
-# Read in image & resize
-h = 650
-w = 350
-img = cv2.imread('../image/shadow_1.jpg', 0)
-img = cv2.resize(img, (h, w))
+# Create Track Bar
+cv2.namedWindow("Trackbar Windows")
 
-# Number of rows and columns
-rows = img.shape[0]
-cols = img.shape[1]
-
-# Remove some columns from the beginning and end
-img = img[:, 59:cols-20]
-
-# Number of rows and columns
-rows = img.shape[0]
-cols = img.shape[1]
-
-Ihmf2, Ithresh, Iopen = homomorphic(img)
+# Homomorphic filtering 조절 값 생성 및 설정
+cv2.createTrackbar("H_sigma", "Trackbar Windows", 0, 20, lambda x : x)
+cv2.setTrackbarPos("H_sigma", "Trackbar Windows", 10)
 
 # Show all images
-cv2.imshow('Original Image', img)
-cv2.imshow('Homomorphic Filtered Result', Ihmf2)
-cv2.imshow('Thresholded Result', Ithresh)
-cv2.imshow('Opened Result', Iopen)
+while cv2.waitKey(1) != ord('q'):
 
-cv2.waitKey(0)
+    #### Main program
+
+    # Read in image & resize
+    img = cv2.imread('../image/shadow_1.jpg', cv2.IMREAD_GRAYSCALE)
+    img = cv2.resize(img, (650, 700))
+
+    # Number of rows and columns
+    rows = img.shape[0]
+    cols = img.shape[1]
+
+    # Remove some columns from the beginning and end
+    img = img[:, 59:cols-20]
+
+    # Number of rows and columns
+    rows = img.shape[0]
+    cols = img.shape[1]
+
+    sigma = cv2.getTrackbarPos("H_sigma", "Trackbar Windows")
+    Ihmf2, Ithresh, Iopen = homomorphic_filtering(img, sigma)
+
+    cv2.imshow('Trackbar Windows', img)
+    cv2.imshow('Thresholded Result', Ithresh)
+    cv2.imshow('Homomorphic Filtered Result', Ihmf2)
+
 cv2.destroyAllWindows()

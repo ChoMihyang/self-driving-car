@@ -32,7 +32,7 @@ while cv2.waitKey(1) != ord('q'):
     high_thresh = cv2.getTrackbarPos("C_high_thr", "Trackbar Windows")
     
     blur, canny_result = canny(src, sigma, low_thresh, high_thresh)
-
+    
     cv2.imshow("Trackbar Windows", canny_result)
 
 cv2.destroyAllWindows()
