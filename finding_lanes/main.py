@@ -60,6 +60,8 @@ def color_filtering_img(image):
     gray_img = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     g_blur_img = cv2.GaussianBlur(gray_img, (g_blur_size, g_blur_size), 0)
     m_blur_img = cv2.medianBlur(g_blur_img, m_blur_size)
+    cv2.imshow("gau", g_blur_img)
+    cv2.imshow("med", m_blur_img)
     ret, thr_img = cv2.threshold(m_blur_img, thresh, 255, cv2.THRESH_BINARY)
     canny_img = cv2.Canny(thr_img, 30, 350)
 
@@ -118,7 +120,7 @@ def slide_window_search(image, left_current, right_current):
     #   [0 0 0]
     #   [0 0 0]]
     out_img = np.dstack((image, image, image))
-    nwindows = 4 # TODO : 윈도우 영역(프레임)을 나누기 위한 분할값? 순환할 window사이즈?
+    nwindows = 4 # 순환할 윈도우 영역 수 
     window_height = np.int(image.shape[0] / nwindows) # 윈도우 영역 분할
     margin = 100
     minpix = 50

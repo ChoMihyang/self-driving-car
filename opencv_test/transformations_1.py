@@ -1,6 +1,7 @@
 import cv2
 import numpy as np
 
+# bird eye view Test
 img = cv2.imread('../image/TestTrack_1.png')
 
 # height : 행, width : 열 
