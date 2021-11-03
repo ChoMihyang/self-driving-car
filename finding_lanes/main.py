@@ -1,9 +1,7 @@
 import math
-
+import scipy.fftpack 
 import numpy as np
 import cv2
-import matplotlib.pyplot as plt
-from matplotlib.animation import FuncAnimation
 
 # 좌표 설정 
 _LB = 0    # 좌하
@@ -52,22 +50,21 @@ def wrapping_img(image, source_position):
     return wrapped_img, minverse
 
 # 이미지 프로세싱 (회색조 변환, 블러 처리, 임계 처리, canny)    
-def color_filtering_img(image):
-    g_blur_size = 7
-    m_blur_size = 13
+def color_filtering_img(image, canny_sigma, low_thresh, high_thresh):
+    g_blur_size = 5
+    m_blur_size = 5
     thresh = 170
-
-    gray_img = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    g_blur_img = cv2.GaussianBlur(gray_img, (g_blur_size, g_blur_size), 0)
+    
+    image = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
+    g_blur_img = cv2.GaussianBlur(image, (g_blur_size, g_blur_size), canny_sigma)
     m_blur_img = cv2.medianBlur(g_blur_img, m_blur_size)
-    cv2.imshow("gau", g_blur_img)
-    cv2.imshow("med", m_blur_img)
     ret, thr_img = cv2.threshold(m_blur_img, thresh, 255, cv2.THRESH_BINARY)
-    canny_img = cv2.Canny(thr_img, 30, 350)
+    canny = cv2.Canny(thr_img, low_thresh, high_thresh)
 
-    filtered_img = canny_img
+    # cv2.imshow("gau", g_blur_img)
+    # cv2.imshow("med", m_blur_img)
 
-    return filtered_img
+    return canny
 
 # 차선 검출 관심 영역 설정
 def set_roi_area(image):
@@ -232,16 +229,113 @@ def draw_lane_lines(original_image, warped_image, minv, draw_info):
 
     return pts_mean, result, deg, dist   
 
+#### imclearborder definition
+def imclearborder(imgBW, radius):
+
+    # Given a black and white image, first find all of its contours
+    imgBWcopy = imgBW.copy()
+    contours,hierarchy = cv2.findContours(imgBWcopy.copy(), cv2.RETR_LIST, 
+        cv2.CHAIN_APPROX_SIMPLE)
+
+    # Get dimensions of image
+    imgRows = imgBW.shape[0]
+    imgCols = imgBW.shape[1]    
+
+    contourList = [] # ID list of contours that touch the border
+
+    # For each contour...
+    for idx in np.arange(len(contours)):
+        # Get the i'th contour
+        cnt = contours[idx]
+
+        # Look at each point in the contour
+        for pt in cnt:
+            rowCnt = pt[0][1]
+            colCnt = pt[0][0]
+
+            # If this is within the radius of the border
+            # this contour goes bye bye!
+            check1 = (rowCnt >= 0 and rowCnt < radius) or (rowCnt >= imgRows-1-radius and rowCnt < imgRows)
+            check2 = (colCnt >= 0 and colCnt < radius) or (colCnt >= imgCols-1-radius and colCnt < imgCols)
+
+            if check1 or check2:
+                contourList.append(idx)
+                break
+
+    for idx in contourList:
+        cv2.drawContours(imgBWcopy, contours, idx, (0,0,0), -1)
+
+    return imgBWcopy
+
+#### bwareaopen definition
+def bwareaopen(imgBW, areaPixels):
+    # Given a black and white image, first find all of its contours
+    imgBWcopy = imgBW.copy()
+    contours,hierarchy = cv2.findContours(imgBWcopy.copy(), cv2.RETR_LIST, 
+        cv2.CHAIN_APPROX_SIMPLE)
+
+    # For each contour, determine its total occupying area
+    for idx in np.arange(len(contours)):
+        area = cv2.contourArea(contours[idx])
+        if (area >= 0 and area <= areaPixels):
+            cv2.drawContours(imgBWcopy, contours, idx, (0,0,0), -1)
+
+    return imgBWcopy
+
+def homomorphic_filtering(img, sigma):
+
+    # Convert image to 0 to 1, then do log(1 + I)
+    imgLog = np.log1p(np.array(img, dtype="float") / 255)
+
+    # Create Gaussian mask of sigma = 10
+    M = 2 * rows + 1
+    N = 2 * cols + 1
+    (X, Y) = np.meshgrid(np.linspace(0, N - 1, N), np.linspace(0, M - 1, M))
+    centerX = np.ceil(N / 2)
+    centerY = np.ceil(M / 2)
+    gaussianNumerator = (X - centerX) ** 2 + (Y - centerY) ** 2
+
+    # Low pass and high pass filters
+    Hlow = np.exp(-gaussianNumerator / (2 * sigma * sigma))
+    Hhigh = 1 - Hlow
+
+    # Move origin of filters so that it's at the top left corner to
+    # match with the input image
+    HlowShift = scipy.fftpack.ifftshift(Hlow.copy())
+    HhighShift = scipy.fftpack.ifftshift(Hhigh.copy())
+
+    # Filter the image and crop
+    If = scipy.fftpack.fft2(imgLog.copy(), (M,N))
+    Ioutlow = scipy.real(scipy.fftpack.ifft2(If.copy() * HlowShift, (M,N)))
+    Iouthigh = scipy.real(scipy.fftpack.ifft2(If.copy() * HhighShift, (M,N)))
+
+    # Set scaling factors and add
+    gamma1 = 0
+    gamma2 = 1
+    Iout = gamma1 * Ioutlow[0:rows, 0:cols] + gamma2 * Iouthigh[0:rows, 0:cols]
+    # Anti-log then rescale to [0,1]
+    Ihmf = np.expm1(Iout)
+    Ihmf = (Ihmf - np.min(Ihmf)) / (np.max(Ihmf) - np.min(Ihmf))
+    Ihmf2 = np.array(255 * Ihmf, dtype = "uint8")
+
+    # Threshold the image - Anything below intensity 65 gets set to white
+    Ithresh = Ihmf2 < 65
+    Ithresh = 255 * Ithresh.astype("uint8")
+
+    # Clear off the border.  Choose a border radius of 5 pixels
+    Iclear = imclearborder(Ithresh, 5)
+
+    # Eliminate regions that have areas below 120 pixels
+    Iopen = bwareaopen(Iclear, 120)
+
+    return Ihmf2, Ithresh, Iopen
 
 # 비디오 불러오기
-cap = cv2.VideoCapture("../image/video_test_4.mp4")
+cap = cv2.VideoCapture("../image/Shadow_Test_1.avi")
 winname = "result"
 
 width = cap.get(cv2.CAP_PROP_FRAME_WIDTH)
 height = cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
-
-fourcc = cv2.VideoWriter_fourcc(*'DIVX')
-out = cv2.VideoWriter('result.avi', fourcc, 30.0, (int(width), int(height)))
 
 cv2.namedWindow(winname)
 
@@ -252,16 +346,32 @@ while True:
     if not ret:
         break
     
+    # Number of rows and columns
+    rows = img.shape[0]
+    cols = img.shape[1]
+
+    # Remove some columns from the beginning and end
+    img = img[:, 59:cols-20]
+
+    # Number of rows and columns
+    rows = img.shape[0]
+    cols = img.shape[1]
+
     # h : 해당 이미지(영상)의 높이, w : 해당 이미지(영상)의 너비
-    (h, w) = (img.shape[0], img.shape[1])
+    # (h, w) = (img.shape[0], img.shape[1])
+    homo_sigma = 10
+    canny_sigma = 2
+    low_thresh = 35
+    high_thresh = 180
+
     mark_img, src_position = make_source_marker(img)
     wrap_img, minv = wrapping_img(img, src_position)
-    filter_img = color_filtering_img(wrap_img)
+    Ihmf2, Ithresh, Iopen = homomorphic_filtering(wrap_img, homo_sigma) # homomorphic filtering
+    filter_img = color_filtering_img(Ihmf2, canny_sigma, low_thresh, high_thresh) # canny filtering
     roi_img = set_roi_area(filter_img)
 
     left, right = plot_histogram(roi_img) # 왼쪽 차선 영역과 오른쪽 차선 영역을 구분 
     draw_info = slide_window_search(roi_img, left, right)
-    print(draw_info)
     mean_pts, result, deg, dist = draw_lane_lines(img, roi_img, minv, draw_info)
 
     dir = "LEFT" if ((deg < _DEG_ERROR_RANGE * -1) and dist > _DIST_ERROR_RANGE) \
@@ -274,9 +384,6 @@ while True:
                 cv2.LINE_AA)
     cv2.putText(result, f"[{dir}]", (20, 120), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2,
                 cv2.LINE_AA)
-
-    cv2.imshow(winname, result)
-    out.write(result)
 
     # 비디오 띄우기
     cv2.imshow("result", result)

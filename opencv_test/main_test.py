@@ -83,8 +83,8 @@ def homomorphic_filtering(img, sigma):
     Iouthigh = scipy.real(scipy.fftpack.ifft2(If.copy() * HhighShift, (M,N)))
 
     # Set scaling factors and add
-    gamma1 = 0
-    gamma2 = 1
+    gamma1 = 0.3
+    gamma2 = 1.5
     Iout = gamma1 * Ioutlow[0:rows, 0:cols] + gamma2 * Iouthigh[0:rows, 0:cols]
     # Anti-log then rescale to [0,1]
     Ihmf = np.expm1(Iout)
@@ -117,17 +117,17 @@ cv2.namedWindow("Canny_Trackbar Windows")
 
 # Homomorphic filtering 조절 값 생성 및 설정
 cv2.createTrackbar("H_sigma", "Homo_Trackbar Windows", 0, 20, lambda x : x)
-cv2.setTrackbarPos("H_sigma", "Homo_Trackbar Windows", 20)
+cv2.setTrackbarPos("H_sigma", "Homo_Trackbar Windows", 2)
 
 # Canny Filtering 조절 값 생성 및 설정
 cv2.createTrackbar("G_sigma", "Canny_Trackbar Windows", 0, 10, lambda x : x)
-cv2.setTrackbarPos("G_sigma", "Canny_Trackbar Windows", 2)
+cv2.setTrackbarPos("G_sigma", "Canny_Trackbar Windows", 3)
 
 cv2.createTrackbar("C_low_thr", "Canny_Trackbar Windows", 0, 500, lambda x : x)
-cv2.setTrackbarPos("C_low_thr", "Canny_Trackbar Windows", 90)
+cv2.setTrackbarPos("C_low_thr", "Canny_Trackbar Windows", 30)
 
 cv2.createTrackbar("C_high_thr", "Canny_Trackbar Windows", 0, 500, lambda x : x)
-cv2.setTrackbarPos("C_high_thr", "Canny_Trackbar Windows", 220)
+cv2.setTrackbarPos("C_high_thr", "Canny_Trackbar Windows", 200)
 
 # Show all images
 while cv2.waitKey(1) != ord('q'):
@@ -135,7 +135,9 @@ while cv2.waitKey(1) != ord('q'):
     #### Main program
 
     # Read in image & resize
-    img = cv2.imread('../image/shadow_1.jpg', 1)
+    # img = cv2.imread('../image/shadow_test_1_1.png', 1)
+    # img = cv2.imread('../image/shadow_test_1_2.png', 1)
+    img = cv2.imread('../image/shadow_test_1_3.png', 1)
     img = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
     img = cv2.resize(img, (350, 400))
 
