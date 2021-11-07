@@ -134,10 +134,10 @@ while True:
     rows = img.shape[0]
     cols = img.shape[1]
 
-    homo_sigma = 15
-    canny_blur = 2
-    low_thresh = 100
-    high_thresh = 155
+    homo_sigma = 1
+    canny_blur = 5
+    low_thresh = 70
+    high_thresh = 190
 
     # Homomorphic filtering
     Ihmf2, Ithresh, Iopen = homomorphic_filtering(img, homo_sigma)

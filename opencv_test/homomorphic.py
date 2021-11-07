@@ -118,7 +118,7 @@ while cv2.waitKey(1) != ord('q'):
     #### Main program
 
     # Read in image & resize
-    img = cv2.imread('../image/shadow_1.jpg', 1)
+    img = cv2.imread('../image/shadow_test_1_1.png', 1)
     img = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
     img = cv2.resize(img, (350, 600))
 

@@ -117,24 +117,22 @@ cv2.namedWindow("Canny_Trackbar Windows")
 
 # Homomorphic filtering 조절 값 생성 및 설정
 cv2.createTrackbar("H_sigma", "Homo_Trackbar Windows", 0, 20, lambda x : x)
-cv2.setTrackbarPos("H_sigma", "Homo_Trackbar Windows", 2)
+cv2.setTrackbarPos("H_sigma", "Homo_Trackbar Windows", 1)
 
 # Canny Filtering 조절 값 생성 및 설정
 cv2.createTrackbar("G_sigma", "Canny_Trackbar Windows", 0, 10, lambda x : x)
-cv2.setTrackbarPos("G_sigma", "Canny_Trackbar Windows", 3)
+cv2.setTrackbarPos("G_sigma", "Canny_Trackbar Windows", 5)
 
 cv2.createTrackbar("C_low_thr", "Canny_Trackbar Windows", 0, 500, lambda x : x)
-cv2.setTrackbarPos("C_low_thr", "Canny_Trackbar Windows", 30)
+cv2.setTrackbarPos("C_low_thr", "Canny_Trackbar Windows", 70)
 
 cv2.createTrackbar("C_high_thr", "Canny_Trackbar Windows", 0, 500, lambda x : x)
-cv2.setTrackbarPos("C_high_thr", "Canny_Trackbar Windows", 200)
+cv2.setTrackbarPos("C_high_thr", "Canny_Trackbar Windows", 190)
 
-# Show all images
+
 while cv2.waitKey(1) != ord('q'):
 
-    #### Main program
-
-    # Read in image & resize
+    # 이미지 불러오기 및 해상도 조절
     # img = cv2.imread('../image/shadow_test_1_1.png', 1)
     # img = cv2.imread('../image/shadow_test_1_2.png', 1)
     img = cv2.imread('../image/shadow_test_1_3.png', 1)
@@ -153,11 +151,11 @@ while cv2.waitKey(1) != ord('q'):
     cols = img.shape[1]
     
     # 트랙 바 get
-    homo_sigma = cv2.getTrackbarPos("H_sigma", "Homo_Trackbar Windows")
+    homo_sigma = cv2.getTrackbarPos("H_sigma", "Homo_Trackbar Windows")      # homomorphic Filter의 sigma 조절 값
 
-    canny_sigma = cv2.getTrackbarPos("G_sigma", "Canny_Trackbar Windows")
-    low_thresh = cv2.getTrackbarPos("C_low_thr", "Canny_Trackbar Windows")
-    high_thresh = cv2.getTrackbarPos("C_high_thr", "Canny_Trackbar Windows")
+    canny_sigma = cv2.getTrackbarPos("G_sigma", "Canny_Trackbar Windows")    # canny의 블러 조절 값
+    low_thresh = cv2.getTrackbarPos("C_low_thr", "Canny_Trackbar Windows")   # canny의 낮은 임계 값
+    high_thresh = cv2.getTrackbarPos("C_high_thr", "Canny_Trackbar Windows") # canny의 높은 임계 값
 
     # Homomorphic filtering
     Ihmf2, Ithresh, Iopen = homomorphic_filtering(img, homo_sigma)

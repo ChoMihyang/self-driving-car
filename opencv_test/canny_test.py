@@ -10,7 +10,7 @@ def canny(img, sigma, low_thresh, high_thresh):
 
     return lane_image, canny
 
-src = cv2.imread("../image/shadow_1.jpg", 1)
+src = cv2.imread("../image/shadow_test_1_1.png", 1)
 src = cv2.resize(src, dsize=(700, 700), interpolation=cv2.INTER_AREA)
 
 cv2.namedWindow("Trackbar Windows")
