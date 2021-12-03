@@ -1,6 +1,5 @@
 import cv2
 import numpy as np
-from numpy.core.numeric import False_
 
 # 이미지 프로세싱
 def canny(image):
@@ -39,13 +38,7 @@ def display_lines(image, lines):
     detection = False
     
     if lines is not None:
-        print(type(len(lines)))
         for line in lines:
-
-            if len(lines) > 0 :
-                print('차선 인식 있음')
-                detection = True
-
             x1, y1, x2, y2 = line.reshape(4)
             print('x1 : ', x1, ' / y1 : ', y1, ' / x2 : ', x2, ' / y2 : ', y2)
             # line(img, 시작 좌표(x1, y1), 종료 좌표(x2, y2), color, 선 두께)
@@ -54,6 +47,12 @@ def display_lines(image, lines):
     elif lines is None:
         print('차선 인식 없음')
     
+    for line in lines :
+        if len(lines) > 0 :
+            print('차선 인식 있음')
+    #         detection = True
+    #         break
+
     return detection, line_image 
 
 
@@ -66,7 +65,6 @@ def flag(detection):
 
     if detection is True:
         print(stop_line_count, '바퀴')
-        stop_line_count += 1
         
         if stop_line_count == 4:
             print('주행 완료, 최종 정지')
@@ -75,7 +73,7 @@ def flag(detection):
     detection = False
 
     return stop_point
-   
+
 ##### 정지선 카운팅 메서드 끝 #####
 
 
@@ -97,6 +95,7 @@ while True:
     detection, line_image = display_lines(lane_image, lines)
     combo_image = cv2.addWeighted(lane_image, 0.8, line_image, 1, 1)
     stop_point = flag(detection) # 정지선 카운트
+    stop_line_count += 1
     print("stop_point : ", stop_point)
     cv2.imshow("result", combo_image)
 
